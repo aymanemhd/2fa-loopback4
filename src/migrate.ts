@@ -1,10 +1,10 @@
-import {AuthappApplication} from './application';
+import {Api2FaApplication} from './application';
 
 export async function migrate(args: string[]) {
   const existingSchema = args.includes('--rebuild') ? 'drop' : 'alter';
   console.log('Migrating schemas (%s existing schema)', existingSchema);
 
-  const app = new AuthappApplication();
+  const app = new Api2FaApplication();
   await app.boot();
   await app.migrateSchema({existingSchema});
 

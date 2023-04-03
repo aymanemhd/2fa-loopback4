@@ -278,6 +278,16 @@ export class OpenApiController {
       password?: Userdb['password'];
     },
   ): Promise<{message?: string}> {
-    throw new Error('Not implemented');
+    const emailver = await this.userRepository.findOne({
+      where: {
+        email: userver.email,
+        password: userver.password,
+      },
+    });
+    if (!emailver?.email || !emailver?.password) {
+      throw new Error('Not implemented');
+    }
+
+    return {message: 'Connect Successfully'};
   }
 }

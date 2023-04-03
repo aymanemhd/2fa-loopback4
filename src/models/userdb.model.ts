@@ -9,6 +9,24 @@ export class Userdb extends Entity {
   })
   id?: string;
 
+  @property({
+    type: 'string',
+    required: true,
+  })
+  name: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  email: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  password: string;
+
   // Define well-known properties here
 
   // Indexer property to allow additional data

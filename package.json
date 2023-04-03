@@ -1,7 +1,7 @@
 {
-  "name": "authapp",
+  "name": "api2fa",
   "version": "0.0.1",
-  "description": "authapp",
+  "description": "Desktop",
   "keywords": [
     "loopback-application",
     "loopback"
@@ -25,8 +25,8 @@
     "test": "lb-mocha --allow-console-logs \"dist/__tests__\"",
     "posttest": "npm run lint",
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
-    "docker:build": "docker build -t authapp .",
-    "docker:run": "docker run -p 3000:3000 -d authapp",
+    "docker:build": "docker build -t api2fa .",
+    "docker:run": "docker run -p 3000:3000 -d api2fa",
     "premigrate": "npm run build",
     "migrate": "node ./dist/migrate",
     "preopenapi-spec": "npm run build",
@@ -57,6 +57,7 @@
     "@loopback/service-proxy": "^5.0.9",
     "loopback-connector-mongodb": "^5.6.0",
     "loopback-connector-openapi": "^6.2.0",
+    "speakeasy": "^2.0.0",
     "tslib": "^2.0.0"
   },
   "devDependencies": {
