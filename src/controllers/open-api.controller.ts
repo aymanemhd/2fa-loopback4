@@ -1,5 +1,7 @@
-import {api, operation, param, requestBody} from '@loopback/rest';
-import {User} from '../models/user.model';
+import {repository} from '@loopback/repository';
+import {api, operation, requestBody} from '@loopback/rest';
+import {Userdb} from '../models/userdb.model';
+import {UserRepository} from '../repositories/user.repository';
 
 /**
  * The controller class is generated from OpenAPI spec with operations tagged
@@ -33,7 +35,9 @@ import {User} from '../models/user.model';
   paths: {},
 })
 export class OpenApiController {
-  constructor() {}
+  constructor(
+    @repository(UserRepository) private userRepository: UserRepository,
+  ) {}
 
   /**
    *
@@ -42,133 +46,144 @@ export class OpenApiController {
    * @returns Successfully signed in
    */
   @operation('post', '/signup', {
-  summary: 'Create a new account',
-  operationId: 'signup',
-  requestBody: {
-    description: "The user's account details",
-    required: true,
-    content: {
-      'application/json': {
-        schema: {
-          type: 'object',
-          properties: {
-            name: {
-              type: 'string',
-            },
-            email: {
-              type: 'string',
-              format: 'email',
-            },
-            password: {
-              type: 'string',
-              format: 'password',
-            },
-          },
-        },
-      },
-      'application/xml': {
-        schema: {
-          type: 'object',
-          properties: {},
-        },
-      },
-      'multipart/form-data': {
-        schema: {
-          type: 'object',
-          properties: {},
-        },
-        examples: {
-          'Example 1': {
-            value: {
-              name: 'aymane',
-              email: 'aymane@gmail.com',
-              password: '2022',
-            },
-          },
-        },
-      },
-    },
-  },
-  responses: {
-    '200': {
-      description: 'Successfully signed in',
-      content: {
-        'application/json': {
-          schema: {
-            $ref: '#/components/schemas/User',
-          },
-        },
-      },
-    },
-    '400': {
-      description: 'Invalid input data',
+    summary: 'Create a new account',
+    operationId: 'signup',
+    requestBody: {
+      description: "The user's account details",
+      required: true,
       content: {
         'application/json': {
           schema: {
             type: 'object',
             properties: {
-              message: {
+              name: {
                 type: 'string',
-                example: 'Invalid input data',
+              },
+              email: {
+                type: 'string',
+                format: 'email',
+              },
+              password: {
+                type: 'string',
+                format: 'password',
+              },
+            },
+          },
+        },
+        'application/xml': {
+          schema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+        'multipart/form-data': {
+          schema: {
+            type: 'object',
+            properties: {},
+          },
+          examples: {
+            'Example 1': {
+              value: {
+                name: 'aymane',
+                email: 'aymane@gmail.com',
+                password: '2022',
               },
             },
           },
         },
       },
     },
-  },
-  'x-extension-1': null,
-})
-  async signup(@requestBody({
-  description: "The user's account details",
-  required: true,
-  content: {
-    'application/json': {
-      schema: {
-        type: 'object',
-        properties: {
-          name: {
-            type: 'string',
+    responses: {
+      '200': {
+        description: 'Successfully signed in',
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/User',
+            },
           },
-          email: {
-            type: 'string',
-            format: 'email',
-          },
-          password: {
-            type: 'string',
-            format: 'password',
+        },
+      },
+      '400': {
+        description: 'Invalid input data',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Invalid input data',
+                },
+              },
+            },
           },
         },
       },
     },
-    'application/xml': {
-      schema: {
-        type: 'object',
-        properties: {},
-      },
-    },
-    'multipart/form-data': {
-      schema: {
-        type: 'object',
-        properties: {},
-      },
-      examples: {
-        'Example 1': {
-          value: {
-            name: 'aymane',
-            email: 'aymane@gmail.com',
-            password: '2022',
+    'x-extension-1': null,
+  })
+  async signup(
+    @requestBody({
+      description: "The user's account details",
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+              },
+              email: {
+                type: 'string',
+                format: 'email',
+              },
+              password: {
+                type: 'string',
+                format: 'password',
+              },
+            },
+          },
+        },
+        'application/xml': {
+          schema: {
+            type: 'object',
+            properties: {},
+          },
+        },
+        'multipart/form-data': {
+          schema: {
+            type: 'object',
+            properties: {},
+          },
+          examples: {
+            'Example 1': {
+              value: {
+                name: 'aymane',
+                email: 'aymane@gmail.com',
+                password: '2022',
+              },
+            },
           },
         },
       },
+    })
+    userres: // _requestBody: {
+    //   name?: string;
+    //   email?: string;
+    //   password?: string;
+    // },
+    {
+      name?: Userdb['name'];
+      email?: Userdb['email'];
+      password?: Userdb['password'];
     },
-  },
-}) _requestBody: {
-  name?: string;
-  email?: string;
-  password?: string;
-}): Promise<User> {
-    throw new Error('Not implemented');
+  ): Promise<Userdb> {
+    // throw new Error('Not implemented');
+
+    const res = await this.userRepository.create(userres);
+    return res;
   }
 
   /**
@@ -178,92 +193,91 @@ export class OpenApiController {
    * @returns Successfully signed in
    */
   @operation('post', '/signin', {
-  summary: 'Sign in to an existing account',
-  operationId: 'signin',
-  requestBody: {
-    description: "The user's login credentials",
-    required: true,
-    content: {
-      'application/json': {
-        schema: {
-          type: 'object',
-          properties: {
-            email: {
-              type: 'string',
-              format: 'email',
-            },
-            password: {
-              type: 'string',
-              format: 'password',
-            },
-          },
-        },
-      },
-    },
-  },
-  responses: {
-    '200': {
-      description: 'Successfully signed in',
+    summary: 'Sign in to an existing account',
+    operationId: 'signin',
+    requestBody: {
+      description: "The user's login credentials",
+      required: true,
       content: {
         'application/json': {
           schema: {
             type: 'object',
             properties: {
-              message: {
+              email: {
                 type: 'string',
-                example: 'Successfully signed in',
+                format: 'email',
+              },
+              password: {
+                type: 'string',
+                format: 'password',
               },
             },
           },
         },
       },
     },
-    '401': {
-      description: 'Invalid credentials',
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              message: {
-                type: 'string',
-                example: 'Invalid credentials',
+    responses: {
+      '200': {
+        description: 'Successfully signed in',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Successfully signed in',
+                },
+              },
+            },
+          },
+        },
+      },
+      '401': {
+        description: 'Invalid credentials',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Invalid credentials',
+                },
               },
             },
           },
         },
       },
     },
-  },
-})
-  async signin(@requestBody({
-  description: "The user's login credentials",
-  required: true,
-  content: {
-    'application/json': {
-      schema: {
-        type: 'object',
-        properties: {
-          email: {
-            type: 'string',
-            format: 'email',
-          },
-          password: {
-            type: 'string',
-            format: 'password',
+  })
+  async signin(
+    @requestBody({
+      description: "The user's login credentials",
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              email: {
+                type: 'string',
+                format: 'email',
+              },
+              password: {
+                type: 'string',
+                format: 'password',
+              },
+            },
           },
         },
       },
+    })
+    userver: {
+      email?: Userdb['email'];
+      password?: Userdb['password'];
     },
-  },
-}) _requestBody: {
-  email?: string;
-  password?: string;
-}): Promise<{
-  message?: string;
-}> {
+  ): Promise<{message?: string}> {
     throw new Error('Not implemented');
   }
-
 }
-
