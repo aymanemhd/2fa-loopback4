@@ -13,7 +13,7 @@ export class Userdb extends Entity {
     type: 'string',
     required: true,
   })
-  name: string;
+  username: string;
 
   @property({
     type: 'string',
@@ -25,7 +25,46 @@ export class Userdb extends Entity {
     type: 'string',
     required: true,
   })
-  password: string;
+  phone: string;
+
+  @property({
+    type: 'string',
+  })
+  organisation: string;
+
+  @property({
+    type: 'boolean',
+    required: true,
+    default: false,
+  })
+  otp_enabled?: boolean;
+
+  @property({
+    type: 'boolean',
+    required: true,
+    default: false,
+  })
+  otp_verified?: boolean;
+
+  @property({
+    type: 'string',
+  })
+  otp_ascii?: string;
+
+  @property({
+    type: 'string',
+  })
+  otp_hex?: string;
+
+  @property({
+    type: 'string',
+  })
+  otp_base32?: string;
+
+  @property({
+    type: 'string',
+  })
+  otp_auth_url?: string;
 
   // Define well-known properties here
 

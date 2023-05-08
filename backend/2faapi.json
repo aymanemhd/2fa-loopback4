@@ -6,10 +6,10 @@
     "description": "API endpoints for creating a new account and signing in to an existing account."
   },
   "paths": {
-    "/signup": {
+    "/register": {
       "post": {
         "summary": "Create a new account",
-        "operationId": "signup",
+        "operationId": "register",
         "requestBody": {
           "description": "The user's account details",
           "required": true,
