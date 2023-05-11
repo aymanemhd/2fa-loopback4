@@ -1,13 +1,46 @@
 import { Link } from "react-router-dom";
-import { FormEvent, SetStateAction, useState } from "react";
+import { ChangeEvent, FormEvent, SetStateAction, useEffect, useState } from "react";
 import axios from "axios";
-import Countries from "../Countries/Countries";
 
-function Register() {
+interface CountryCode {
+  name: string;
+  dialCode: string;
+}
+
+type RegisterProps = {
+  onRegister: (email: string) => void;
+}
+
+function Register(props: RegisterProps) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [organization, setOrganization] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [countryCodes, setCountryCodes] = useState<CountryCode[]>([]);
+  const [selectedCountryCode, setSelectedCountryCode] = useState<CountryCode>({name: "",dialCode: "",});
+  const [contryv, setContryv] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchCountryCodes() {
+      const response = await fetch("https://restcountries.com/v2/all");
+      const data = await response.json();
+      const countryCodes = data.map(
+        (country: { name: string; callingCodes: string[] }) => ({
+          name: country.name,
+          dialCode: `+${country.callingCodes[0]}`,
+        })
+      );
+      setCountryCodes(countryCodes);
+      setSelectedCountryCode(countryCodes[0]);
+    }
+    fetchCountryCodes();
+  }, []);
+
+
+  const handleRegister = () => {
+    props.onRegister(email);
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -18,13 +51,13 @@ function Register() {
       organization,
       phoneNumber,
     };
-
-    try {
-      const response = await axios.post("http://[::1]:8000/register", data);
-      console.log(response.data);
-    } catch (error) {
-      console.error(error);
-    }
+    axios.post("http://[::1]:8000/register", data)
+  .then((res) => { 
+    console.log(res.data);
+  }) 
+  .catch(err => { 
+    console.error(err);
+  })
   };
 
   return (
@@ -47,9 +80,37 @@ function Register() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            <Countries
-              onPhoneNumberChange={(value: SetStateAction<string>) => setPhoneNumber(value)}
-            />
+            <select
+        id="countries"
+        className="block border border-grey-light w-full p-3 rounded mb-4"
+        value={selectedCountryCode.dialCode}
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          const selectedDialCode = event.target.value;
+          const selectedCountry = countryCodes.find(
+            (country) => country.dialCode === selectedDialCode
+          );
+          if (selectedCountry) {
+            setSelectedCountryCode(selectedCountry);
+          }
+        }}
+      >
+        <option value="">Choose countries</option>
+        {countryCodes.map((country, index) => (
+          <option key={index} value={country.dialCode}>
+            {country.name} ({country.dialCode})
+          </option>
+        ))}
+      </select>
+
+      <input
+        type="tel"
+        placeholder={selectedCountryCode.dialCode}
+        className="block border border-grey-light w-full p-3 rounded mb-4"
+        value={phone}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          setPhone(event.target.value);
+        }}
+      />
             <input
               type="text"
               className="block border border-grey-light w-full p-3 rounded mb-4"
@@ -58,12 +119,15 @@ function Register() {
               onChange={(event) => setOrganization(event.target.value)}
             />
             <div className="flex justify-center">
+            <Link to="/activate">
               <button
                 type="submit"
                 className="text-white bg-green-600 hover:bg-green-600 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
+                onClick={handleRegister}
               >
-                Register
+                Request a Confirmation code
               </button>
+              </Link>
             </div>
           </form>
         </div>

@@ -23,14 +23,13 @@ export class Userdb extends Entity {
 
   @property({
     type: 'string',
-    required: true,
   })
-  phone: string;
+  phoneNumber: string;
 
   @property({
     type: 'string',
   })
-  organisation: string;
+  organization: string;
 
   @property({
     type: 'boolean',

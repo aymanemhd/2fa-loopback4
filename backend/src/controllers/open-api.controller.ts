@@ -15,19 +15,19 @@ import {UserRepository} from '../repositories/user.repository';
       User: {
         type: 'object',
         properties: {
-          id: {
-            type: 'number',
-          },
-          name: {
+
+          username: {
             type: 'string',
           },
           email: {
             type: 'string',
             format: 'email',
           },
-          password: {
+          phoneNumber: {
             type: 'string',
-            format: 'password',
+          },
+          organization: {
+            type: 'string',
           },
         },
       },
@@ -64,10 +64,10 @@ export class OpenApiController {
                 type: 'string',
                 format: 'email',
               },
-              phone: {
+              phoneNumber: {
                 type: 'string',
               },
-              organisation: {
+              organization: {
                 type: 'string',
               },
             },
@@ -121,10 +121,10 @@ export class OpenApiController {
                 type: 'string',
                 format: 'email',
               },
-              phone: {
+              phoneNumber: {
                 type: 'string',
               },
-              organisation: {
+              organization: {
                 type: 'string',
               },
             },
@@ -140,8 +140,8 @@ export class OpenApiController {
     {
       username?: Userdb['username'];
       email?: Userdb['email'];
-      phone?: Userdb['phone'];
-      organisation?: Userdb['organisation'];
+      phoneNumber?: Userdb['phoneNumber'];
+      organization?: Userdb['organization'];
     },
   ): Promise<Userdb> {
     const {email} = userres;
