@@ -13,6 +13,18 @@ export class Userdb extends Entity {
     type: 'string',
     required: true,
   })
+  firstname: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  lastname: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
   username: string;
 
   @property({
@@ -30,6 +42,11 @@ export class Userdb extends Entity {
     type: 'string',
   })
   organization: string;
+  
+  @property({
+    type: 'string',
+  })
+  verificationCode: string;
 
   @property({
     type: 'boolean',
@@ -64,6 +81,7 @@ export class Userdb extends Entity {
     type: 'string',
   })
   otp_auth_url?: string;
+  static verificationCode: string;
 
   // Define well-known properties here
 

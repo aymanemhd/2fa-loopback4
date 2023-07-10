@@ -1,8 +1,11 @@
 import {repository} from '@loopback/repository';
-import {HttpErrors, api, operation, requestBody} from '@loopback/rest';
+import {HttpErrors, api, operation, param, requestBody} from '@loopback/rest';
 import speakeasy from 'speakeasy';
 import {Userdb} from '../models/userdb.model';
 import {UserRepository} from '../repositories/user.repository';
+import { promisify } from 'util';
+import nodemailer from 'nodemailer';
+
 
 /**
  * The controller class is generated from OpenAPI spec with operations tagged
@@ -36,9 +39,23 @@ import {UserRepository} from '../repositories/user.repository';
   paths: {},
 })
 export class OpenApiController {
+
+  private mailTransporter: nodemailer.Transporter;
+
+
   constructor(
     @repository(UserRepository) private userRepository: UserRepository,
-  ) {}
+  ) {
+    this.mailTransporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, 
+      auth: {
+        user: 'exoblock.test@gmail.com',
+        pass: 'hnawvnbxlxiwzkst',
+      },
+    });
+  }
 
   /**
    *
@@ -57,6 +74,12 @@ export class OpenApiController {
           schema: {
             type: 'object',
             properties: {
+              firstname:{
+                type: 'string'
+              },
+              lastname:{
+                type: 'string'
+              },
               username: {
                 type: 'string',
               },
@@ -108,12 +131,18 @@ export class OpenApiController {
   async register(
     @requestBody({
       description: "The user's account details",
-      required: true,
+      
       content: {
         'application/json': {
           schema: {
             type: 'object',
             properties: {
+              firstname:{
+                type: 'string'
+              },
+              lastname:{
+                type: 'string'
+              },
               username: {
                 type: 'string',
               },
@@ -132,12 +161,9 @@ export class OpenApiController {
         },
       },
     })
-    userres: // _requestBody: {
-    //   name?: string;
-    //   email?: string;
-    //   password?: string;
-    // },
-    {
+    userres: {
+      firstname?: Userdb['firstname'];
+      lastname?: Userdb['lastname'];
       username?: Userdb['username'];
       email?: Userdb['email'];
       phoneNumber?: Userdb['phoneNumber'];
@@ -145,13 +171,29 @@ export class OpenApiController {
     },
   ): Promise<Userdb> {
     const {email} = userres;
+
+
+
+
     const {ascii, hex, base32, otpauth_url} = speakeasy.generateSecret({
       issuer: '',
       name: email,
       length: 15,
     });
+    const verificationCode = (base32).toString();
+    const sendMail = promisify(this.mailTransporter.sendMail.bind(this.mailTransporter));
+    const mailData = {
+      from: 'verification@exoblock.ma',
+      to: email || '',
+      subject: 'Account Registration',
+      text: `Your verification code is: ${verificationCode}`,
+    };
+    
+    // const info: SentMessageInfo = await sendMail(mailData);
+    await sendMail(mailData);
     const res = await this.userRepository.create({
       ...userres,
+      verificationCode,
       otp_ascii: ascii,
       otp_auth_url: otpauth_url,
       otp_base32: base32,
@@ -160,6 +202,107 @@ export class OpenApiController {
     return res;
   }
 
+  //verify confirmation code
+
+  @operation('post', '/verify', {
+    summary: 'Verify the verification code',
+    operationId: 'verifyCode',
+    requestBody: {
+      description: "The user's verification code",
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              verificationCode: {
+                type: 'string',
+              },
+            },
+            required: ['verificationCode', 'email'],
+          },
+        },
+      },
+    },
+    responses: {
+      '200': {
+        description: 'Verification successful',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Verification successful',
+                },
+              },
+            },
+          },
+        },
+      },
+      '400': {
+        description: 'Invalid verification code',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Invalid verification code',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    'x-extension-1': null,
+  })
+  async verifyCode(
+    @requestBody({
+      description: "The user's verification code",
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              verificationCode: {
+                type: 'string',
+              },
+            },
+            required: ['verificationCode', 'email'],
+          },
+        },
+      },
+    })
+    verification: {
+      verificationCode?: Userdb["verificationCode"];
+      email: Userdb["email"];
+    },
+  ): Promise<{ message: string }> {
+    const { verificationCode, email } = verification;
+    const user = await this.userRepository.findOne({ where: { email } });
+  
+     if (!user) {
+    throw new Error('User not found');
+  }
+
+  const userVerificationCode = user.verificationCode;
+
+  if (verificationCode !== userVerificationCode) {
+    return { message: 'Invalid verification code' };
+  }
+  else{
+    return { message: 'Verification successful' };
+  }
+
+  
+  }
+  
+  
   //verify 2fa function
 
   @operation('post', '/otp/verifyotp', {
@@ -326,7 +469,7 @@ export class OpenApiController {
       },
     },
   })
-  async validateOTP(
+  async getvalidateOTP(
     @requestBody({
       required: true,
       content: {
@@ -367,6 +510,90 @@ export class OpenApiController {
     }
 
     return {validate: true};
+  }
+
+  @operation('get', '/otp/validateotp', {
+    summary: 'Validate OTP',
+    operationId: 'validateOTP',
+    parameters: [
+      {
+        name: 'id',
+        in: 'query',
+        required: true,
+        schema: {
+          type: 'string',
+        },
+        description: 'The user ID',
+      },
+      {
+        name: 'token',
+        in: 'query',
+        required: true,
+        schema: {
+          type: 'string',
+        },
+        description: 'The OTP token',
+      },
+    ],
+    responses: {
+      '200': {
+        description: 'OTP validation successful',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                valid: {
+                  type: 'boolean',
+                },
+              },
+            },
+          },
+        },
+      },
+      '400': {
+        description: 'Invalid input data',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Invalid input data',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async validateOTP(
+    @param.query.string('id') id: string,
+    @param.query.string('token') token: string,
+  ): Promise<{ valid: boolean }> {
+    try {
+      const user = await this.userRepository.findById(id);
+      if (!user) {
+        throw new HttpErrors.NotFound('User not found');
+      }
+
+      if (!user.otp_base32) {
+        throw new HttpErrors.InternalServerError('OTP base32 secret not found for user');
+      }
+
+      const isValid = speakeasy.totp.verify({
+        secret: user.otp_base32!,
+        encoding: 'base32',
+        token: token,
+      });
+
+      return { valid: isValid };
+    } catch (error) {
+      console.error(error);
+      throw new HttpErrors.BadRequest(error.message);
+    }
   }
 
   //disable function
