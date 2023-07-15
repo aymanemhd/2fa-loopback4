@@ -3,9 +3,13 @@ import {HttpErrors, api, operation, param, requestBody} from '@loopback/rest';
 import speakeasy from 'speakeasy';
 import {Userdb} from '../models/userdb.model';
 import {UserRepository} from '../repositories/user.repository';
-import { promisify } from 'util';
+import {promisify} from 'util';
 import nodemailer from 'nodemailer';
+import QRCode from 'qrcode';
+import dotenv from 'dotenv';
 
+
+dotenv.config();
 
 /**
  * The controller class is generated from OpenAPI spec with operations tagged
@@ -18,7 +22,6 @@ import nodemailer from 'nodemailer';
       User: {
         type: 'object',
         properties: {
-
           username: {
             type: 'string',
           },
@@ -39,23 +42,57 @@ import nodemailer from 'nodemailer';
   paths: {},
 })
 export class OpenApiController {
-
   private mailTransporter: nodemailer.Transporter;
-
 
   constructor(
     @repository(UserRepository) private userRepository: UserRepository,
   ) {
+    // this.mailTransporter = nodemailer.createTransport({
+    //   host: 'smtp.gmail.com',
+    //   port: 465,
+    //   secure: true,
+    //   auth: {
+    //     user: 'exoblock.test@gmail.com',
+    //     pass: 'hnawvnbxlxiwzkst',
+    //   },
+    // });
+
     this.mailTransporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
+      host: 'smtp.email.eu-frankfurt-1.oci.oraclecloud.com',
       port: 587,
-      secure: false, 
+      secure: false,
       auth: {
-        user: 'exoblock.test@gmail.com',
-        pass: 'hnawvnbxlxiwzkst',
+        user: 'ocid1.user.oc1..aaaaaaaaxwf6hpfschlu557kyhq4zr2dolwyh56nhmemjaspi4jit6b2xqkq@ocid1.tenancy.oc1..aaaaaaaahhvyscop32k6ekysw3aww3q2kc3hiepkghqnd46v5kaq3zknfdja.4i.com',
+        pass: '9hC6(Vz>Y}GM0qVhV}0E',
       },
     });
-  }
+
+
+
+    // this.mailTransporter = nodemailer.createTransport({
+    //   host: process.env.SMTP_HOST || "",
+    //   port: process.env.SMTP_PORT || "",
+    //   secure: process.env.TLS_ON === 'true',
+    //   auth: {
+    //     user: process.env.SMTP_USER || "",
+    //     pass: process.env.SMTP_PASS || "",
+    //   },
+    // });
+
+
+
+  //   const transporterConfig: SMTPTransport.Options = {
+  //     host: process.env.SMTP_HOST || "",
+  //     port: parseInt(process.env.SMTP_PORT || ""),
+  //     secure: process.env.TLS_ON === 'true',
+  //     auth: {
+  //       user: process.env.SMTP_USER || "",
+  //       pass: process.env.SMTP_PASS || "",
+  //     },
+  //   };
+    
+  //   this.mailTransporter= nodemailer.createTransport(transporterConfig);
+   }
 
   /**
    *
@@ -74,11 +111,11 @@ export class OpenApiController {
           schema: {
             type: 'object',
             properties: {
-              firstname:{
-                type: 'string'
+              firstname: {
+                type: 'string',
               },
-              lastname:{
-                type: 'string'
+              lastname: {
+                type: 'string',
               },
               username: {
                 type: 'string',
@@ -131,17 +168,17 @@ export class OpenApiController {
   async register(
     @requestBody({
       description: "The user's account details",
-      
+
       content: {
         'application/json': {
           schema: {
             type: 'object',
             properties: {
-              firstname:{
-                type: 'string'
+              firstname: {
+                type: 'string',
               },
-              lastname:{
-                type: 'string'
+              lastname: {
+                type: 'string',
               },
               username: {
                 type: 'string',
@@ -171,27 +208,71 @@ export class OpenApiController {
     },
   ): Promise<Userdb> {
     const {email} = userres;
+    const {username} = userres;
+    const {phoneNumber} = userres;
 
-
-
+    
 
     const {ascii, hex, base32, otpauth_url} = speakeasy.generateSecret({
       issuer: '',
       name: email,
       length: 15,
     });
-    const verificationCode = (base32).toString();
-    const sendMail = promisify(this.mailTransporter.sendMail.bind(this.mailTransporter));
+    const oneTimeCode = speakeasy.totp({
+      secret: base32,
+      encoding: 'base32',
+    });
+    const verificationCode = oneTimeCode.toString();
+    const sendMail = promisify(
+      this.mailTransporter.sendMail.bind(this.mailTransporter),
+    );
+    const qrCodeData = await QRCode.toDataURL(oneTimeCode);
+    // const qrCodeImage = qrCodeData.split(';base64,').pop()
     const mailData = {
-      from: 'verification@exoblock.ma',
+      from: "noreply@exocert.io",
       to: email || '',
       subject: 'Account Registration',
-      text: `Your verification code is: ${verificationCode}`,
+      html: `
+        <p>Your verification code is: ${verificationCode}</p>
+        
+      `,
+      attachments: [
+        {
+          filename: 'qrcode.png',
+          content: qrCodeData.split(';base64,').pop(),
+          encoding: 'base64',
+          cid: 'qrcode', 
+        },
+      ]
+      
     };
+    // const qr = qrcode(0, 'M');
+    // qr.addData(oneTimeCode);
+    // qr.make();
+    // const qrg = qr.createASCII();
     
+    // mailData.text += `\n\nQR Code:\n${qr}`;
+
+
     // const info: SentMessageInfo = await sendMail(mailData);
     await sendMail(mailData);
-    const res = await this.userRepository.create({
+
+    const usernameverifcation = await this.userRepository.findOne({ where: { username } });
+    if (usernameverifcation) {
+      throw new Error('username already exists');
+    }
+    const phoneverifcation = await this.userRepository.findOne({ where: { phoneNumber } });
+    if (phoneverifcation) {
+      throw new Error('phone number already exists');
+    }
+
+    const emailverification = await this.userRepository.findOne({ where: { email } });
+    if (emailverification) {
+      throw new Error('Email already exists');
+    }
+    let res;
+  if (!emailverification && !phoneverifcation && !usernameverifcation) {
+    res = await this.userRepository.create({
       ...userres,
       verificationCode,
       otp_ascii: ascii,
@@ -199,7 +280,13 @@ export class OpenApiController {
       otp_base32: base32,
       otp_hex: hex,
     });
-    return res;
+  } else {
+    throw new Error('Email already exists');
+  }
+
+  return res;
+
+  
   }
 
   //verify confirmation code
@@ -279,30 +366,26 @@ export class OpenApiController {
       },
     })
     verification: {
-      verificationCode?: Userdb["verificationCode"];
-      email: Userdb["email"];
+      verificationCode?: Userdb['verificationCode'];
+      email: Userdb['email'];
     },
-  ): Promise<{ message: string }> {
-    const { verificationCode, email } = verification;
-    const user = await this.userRepository.findOne({ where: { email } });
-  
-     if (!user) {
-    throw new Error('User not found');
+  ): Promise<{message: string}> {
+    const {verificationCode, email} = verification;
+    const user = await this.userRepository.findOne({where: {email}});
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const userVerificationCode = user.verificationCode;
+
+    if (verificationCode !== userVerificationCode) {
+      return {message: 'Invalid verification code'};
+    } else {
+      return {message: 'Verification successful'};
+    }
   }
 
-  const userVerificationCode = user.verificationCode;
-
-  if (verificationCode !== userVerificationCode) {
-    return { message: 'Invalid verification code' };
-  }
-  else{
-    return { message: 'Verification successful' };
-  }
-
-  
-  }
-  
-  
   //verify 2fa function
 
   @operation('post', '/otp/verifyotp', {
@@ -572,7 +655,7 @@ export class OpenApiController {
   async validateOTP(
     @param.query.string('id') id: string,
     @param.query.string('token') token: string,
-  ): Promise<{ valid: boolean }> {
+  ): Promise<{valid: boolean}> {
     try {
       const user = await this.userRepository.findById(id);
       if (!user) {
@@ -580,7 +663,9 @@ export class OpenApiController {
       }
 
       if (!user.otp_base32) {
-        throw new HttpErrors.InternalServerError('OTP base32 secret not found for user');
+        throw new HttpErrors.InternalServerError(
+          'OTP base32 secret not found for user',
+        );
       }
 
       const isValid = speakeasy.totp.verify({
@@ -589,7 +674,7 @@ export class OpenApiController {
         token: token,
       });
 
-      return { valid: isValid };
+      return {valid: isValid};
     } catch (error) {
       console.error(error);
       throw new HttpErrors.BadRequest(error.message);

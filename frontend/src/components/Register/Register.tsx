@@ -15,6 +15,7 @@ function Register(props: RegisterProps) {
   const [email, setEmail] = useState("");
   const [organization, setOrganization] = useState("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleRegister = () => {
     props.onRegister(email);
@@ -35,11 +36,13 @@ function Register(props: RegisterProps) {
       .post("http://[::1]:8000/register", data)
       .then((res) => {
         console.log(res.data);
+        nav("/activate");
       })
       .catch((err) => {
         console.error(err);
+        setErrorMessage(err);
       });
-    nav("/activate");
+    
   };
 
   return (
@@ -53,6 +56,7 @@ function Register(props: RegisterProps) {
       <div className="container max-w-sm mx-auto flex-1 flex flex-col items-center justify-center px-2">
         <div className="bg-white px-6 py-8 rounded shadow-2xl text-black w-full">
           <h1 className="mb-8 text-3xl text-center">Register</h1>
+          {errorMessage && <h1 className="text-red-500 text-center mb-4">{errorMessage}</h1>}
           <form onSubmit={handleSubmit}>
             <div className="flex justify-center">
               <motion.input
