@@ -47,51 +47,17 @@ export class OpenApiController {
   constructor(
     @repository(UserRepository) private userRepository: UserRepository,
   ) {
-    // this.mailTransporter = nodemailer.createTransport({
-    //   host: 'smtp.gmail.com',
-    //   port: 465,
-    //   secure: true,
-    //   auth: {
-    //     user: 'exoblock.test@gmail.com',
-    //     pass: 'hnawvnbxlxiwzkst',
-    //   },
-    // });
-
     this.mailTransporter = nodemailer.createTransport({
-      host: 'smtp.email.eu-frankfurt-1.oci.oraclecloud.com',
-      port: 587,
-      secure: false,
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
-        user: 'ocid1.user.oc1..aaaaaaaaxwf6hpfschlu557kyhq4zr2dolwyh56nhmemjaspi4jit6b2xqkq@ocid1.tenancy.oc1..aaaaaaaahhvyscop32k6ekysw3aww3q2kc3hiepkghqnd46v5kaq3zknfdja.4i.com',
-        pass: '9hC6(Vz>Y}GM0qVhV}0E',
+        user: 'test@gmail.com',
+        pass: '',
       },
     });
 
-
-
-    // this.mailTransporter = nodemailer.createTransport({
-    //   host: process.env.SMTP_HOST || "",
-    //   port: process.env.SMTP_PORT || "",
-    //   secure: process.env.TLS_ON === 'true',
-    //   auth: {
-    //     user: process.env.SMTP_USER || "",
-    //     pass: process.env.SMTP_PASS || "",
-    //   },
-    // });
-
-
-
-  //   const transporterConfig: SMTPTransport.Options = {
-  //     host: process.env.SMTP_HOST || "",
-  //     port: parseInt(process.env.SMTP_PORT || ""),
-  //     secure: process.env.TLS_ON === 'true',
-  //     auth: {
-  //       user: process.env.SMTP_USER || "",
-  //       pass: process.env.SMTP_PASS || "",
-  //     },
-  //   };
     
-  //   this.mailTransporter= nodemailer.createTransport(transporterConfig);
    }
 
   /**
@@ -229,7 +195,7 @@ export class OpenApiController {
     const qrCodeData = await QRCode.toDataURL(oneTimeCode);
     // const qrCodeImage = qrCodeData.split(';base64,').pop()
     const mailData = {
-      from: "noreply@exocert.io",
+      from: "test@gmail.com",
       to: email || '',
       subject: 'Account Registration',
       html: `
